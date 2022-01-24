@@ -2,11 +2,11 @@
 
 namespace CalendarSolver
 {
-	class Program
+	internal class Program
 	{
-		static void Main(string[] args)
+		private static void Main()
 		{
-			var solver = new PuzzleSolver()
+			var solver = new PuzzleSolver
 			{
 				AllowFlips = false,
 				DisplayFailedSolutionLevel = 1, // Set to -1 to turn off

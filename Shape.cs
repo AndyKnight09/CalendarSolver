@@ -5,11 +5,11 @@ namespace CalendarSolver
 {
 	public class Shape
 	{
-		public List<Position> Vertices { get; set; } = new List<Position>();
+		public List<Position> Vertices { get; set; } = new();
 
 		public Shape Rotate90()
 		{
-			return new Shape()
+			return new Shape
 			{
 				Vertices = Vertices.Select(v => new Position(-v.Col, v.Row)).ToList()
 			};
@@ -17,7 +17,7 @@ namespace CalendarSolver
 
 		public Shape Rotate180()
 		{
-			return new Shape()
+			return new Shape
 			{
 				Vertices = Vertices.Select(v => new Position(-v.Row, -v.Col)).ToList()
 			};
@@ -25,7 +25,7 @@ namespace CalendarSolver
 
 		public Shape Rotate270()
 		{
-			return new Shape()
+			return new Shape
 			{
 				Vertices = Vertices.Select(v => new Position(v.Col, -v.Row)).ToList()
 			};
@@ -33,7 +33,7 @@ namespace CalendarSolver
 
 		public Shape Flip()
 		{
-			return new Shape()
+			return new Shape
 			{
 				Vertices = Vertices.Select(v => new Position(-v.Row, v.Col)).ToList()
 			};
@@ -41,7 +41,7 @@ namespace CalendarSolver
 
 		public Shape Offset(Position position)
 		{
-			return new Shape()
+			return new Shape
 			{
 				Vertices = Vertices.Select(v => v + position).ToList()
 			};

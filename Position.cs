@@ -13,8 +13,7 @@ namespace CalendarSolver
 		{
 			if (ReferenceEquals(null, obj)) return false;
 			if (ReferenceEquals(this, obj)) return true;
-			if (obj.GetType() != this.GetType()) return false;
-			return Equals((Position) obj);
+			return obj.GetType() == GetType() && Equals((Position) obj);
 		}
 
 		public override int GetHashCode()
@@ -22,8 +21,8 @@ namespace CalendarSolver
 			return HashCode.Combine(Row, Col);
 		}
 
-		public int Row { get; set; }
-		public int Col { get; set; }
+		public int Row { get; }
+		public int Col { get; }
 
 		public Position(int row, int col)
 		{
@@ -33,11 +32,14 @@ namespace CalendarSolver
 
 		public static Position operator+(Position a, Position b)
 		{
-			return new(a.Row + b.Row, a.Col + b.Col);
+			return new Position(a.Row + b.Row, a.Col + b.Col);
 		}
 
 		public static bool operator==(Position a, Position b)
 		{
+			if (ReferenceEquals(null, a)) return false;
+			if (ReferenceEquals(null, b)) return false;
+
 			return a.Row == b.Row && a.Col == b.Col;
 		}
 

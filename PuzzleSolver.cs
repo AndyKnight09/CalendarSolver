@@ -8,7 +8,7 @@ namespace CalendarSolver
 {
 	public class PuzzleSolver
 	{
-		static readonly Size BoardSize = new Size(7, 8);
+		private static readonly Size BoardSize = new(7, 8);
 
 		public int RequiredSolutions { get; set; }= 1000;
 		public bool AllowFlips { get; set; } = false;
@@ -20,15 +20,15 @@ namespace CalendarSolver
 
 		private PuzzleSolution Puzzle { get; set; }
 		private List<List<Shape>> Shapes { get; set; }
-		private List<PuzzleSolution> Solutions { get; } = new List<PuzzleSolution>();
+		private List<PuzzleSolution> Solutions { get; } = new();
 
-		private Stopwatch sw { get; set; }
+		private Stopwatch Stopwatch { get; set; }
 		
 		public void Solve(DateTime date)
 		{
 			Console.WriteLine("Solving puzzle...");
 
-			sw = Stopwatch.StartNew();
+			Stopwatch = Stopwatch.StartNew();
 			
 			Puzzle = InitialisePuzzle(date);
 			Shapes = GetAllShapePermutations();
@@ -38,33 +38,32 @@ namespace CalendarSolver
 			Solve(Puzzle, Shapes);
 
 			Console.WriteLine();
-			Console.WriteLine($"Took {sw.Elapsed.ToString()} to find {Solutions.Count} solutions");
+			Console.WriteLine($"Took {Stopwatch.Elapsed.ToString()} to find {Solutions.Count} solutions");
 			Console.WriteLine();
 
-			if (!DisplaySolutionsDuringSolve)
+			if (DisplaySolutionsDuringSolve) return;
+			
+			foreach (var solution in Solutions)
 			{
-				foreach (var solution in Solutions)
-				{
-					solution.Display();
-				}
+				solution.Display();
 			}
 		}
 
-		private PuzzleSolution InitialisePuzzle(DateTime date)
+		private static PuzzleSolution InitialisePuzzle(DateTime date)
 		{
 			var initialShapes = new List<Shape>
 			{
 				// Add shape for board (it isn't square)
-				new Shape()
+				new()
 				{
-					Vertices = new List<Position>()
+					Vertices = new List<Position>
 					{
-						new Position(0, 6),
-						new Position(1, 6),
-						new Position(7, 0),
-						new Position(7, 1),
-						new Position(7, 2),
-						new Position(7, 3),
+						new(0, 6),
+						new(1, 6),
+						new(7, 0),
+						new(7, 1),
+						new(7, 2),
+						new(7, 3)
 					}
 				},
 				// Add shape for current date
@@ -76,76 +75,61 @@ namespace CalendarSolver
 
 		private List<List<Shape>> GetAllShapePermutations()
 		{
-			var I_Shapes = GetShapePermutations(new IShape(), 2);
-			var L1_Shapes = GetShapePermutations(new L1Shape(), 4);
-			var S_Shapes = GetShapePermutations(new SShape(), 2);
-			var B_Shapes = GetShapePermutations(new BShape(), 4);
-			var C_Shapes = GetShapePermutations(new CShape(), 4);
-			var L2_Shapes = GetShapePermutations(new L2Shape(), 4);
-			var L3_Shapes = GetShapePermutations(new L3Shape(), 4);
-			var Z1_Shapes = GetShapePermutations(new Z1Shape(), 4);
-			var Z2_Shapes = GetShapePermutations(new Z2Shape(), 2);
-			var T_Shapes = GetShapePermutations(new TShape(), 4);
+			var iShapes = GetShapePermutations(new IShape(), 2);
+			var l1Shapes = GetShapePermutations(new L1Shape(), 4);
+			var sShapes = GetShapePermutations(new SShape(), 2);
+			var bShapes = GetShapePermutations(new BShape(), 4);
+			var cShapes = GetShapePermutations(new CShape(), 4);
+			var l2Shapes = GetShapePermutations(new L2Shape(), 4);
+			var l3Shapes = GetShapePermutations(new L3Shape(), 4);
+			var z1Shapes = GetShapePermutations(new Z1Shape(), 4);
+			var z2Shapes = GetShapePermutations(new Z2Shape(), 2);
+			var tShapes = GetShapePermutations(new TShape(), 4);
 
 			if (AllowFlips)
 			{
 				// No extra I permutations by flipping
-				L1_Shapes.AddRange(L1_Shapes.Select(s => s.Flip()).ToList());
-				S_Shapes.AddRange(S_Shapes.Select(s => s.Flip()).ToList());
-				B_Shapes.AddRange(B_Shapes.Select(s => s.Flip()).ToList());
+				l1Shapes.AddRange(l1Shapes.Select(s => s.Flip()).ToList());
+				sShapes.AddRange(sShapes.Select(s => s.Flip()).ToList());
+				bShapes.AddRange(bShapes.Select(s => s.Flip()).ToList());
 				// No extra C permutations by flipping
-				L2_Shapes.AddRange(L2_Shapes.Select(s => s.Flip()).ToList());
+				l2Shapes.AddRange(l2Shapes.Select(s => s.Flip()).ToList());
 				// No extra L3 permutations by flipping
-				Z1_Shapes.AddRange(Z1_Shapes.Select(s => s.Flip()).ToList());
-				Z2_Shapes.AddRange(Z2_Shapes.Select(s => s.Flip()).ToList());
+				z1Shapes.AddRange(z1Shapes.Select(s => s.Flip()).ToList());
+				z2Shapes.AddRange(z2Shapes.Select(s => s.Flip()).ToList());
 				// No extra T permutations by flipping
 			}
 
 			var allShapes = new List<List<Shape>>
 			{
 				// Shapes with 4 blocks
-				I_Shapes,
-				L1_Shapes,
-				S_Shapes,
+				iShapes,
+				l1Shapes,
+				sShapes,
 				// Shapes with 5 blocks
-				B_Shapes,
-				C_Shapes,
-				L2_Shapes,
-				L3_Shapes,
-				Z1_Shapes,
-				Z2_Shapes,
-				T_Shapes
+				bShapes,
+				cShapes,
+				l2Shapes,
+				l3Shapes,
+				z1Shapes,
+				z2Shapes,
+				tShapes
 			};
 
 			return allShapes;
 		}
 
-		private List<Shape> GetShapePermutations(Shape shape, int numPermutations)
+		private static List<Shape> GetShapePermutations(Shape shape, int numPermutations)
 		{
-			if (numPermutations == 2)
+			return numPermutations switch
 			{
-				return new List<Shape>
-				{
-					shape,
-					shape.Rotate90()
-				};
-			}
-
-			if (numPermutations == 4)
-			{
-				return new List<Shape>
-				{
-					shape,
-					shape.Rotate90(),
-					shape.Rotate180(),
-					shape.Rotate270()
-				};
-			}
-
-			throw new Exception("Unexpected number of shape permutations specified");
+				2 => new List<Shape> { shape, shape.Rotate90() },
+				4 => new List<Shape> { shape, shape.Rotate90(), shape.Rotate180(), shape.Rotate270() },
+				_ => throw new Exception("Unexpected number of shape permutations specified")
+			};
 		}
 
-		private PuzzleSolution Solve(PuzzleSolution solution, List<List<Shape>> remainingShapes, int level = 0)
+		private PuzzleSolution Solve(PuzzleSolution solution, IReadOnlyList<List<Shape>> remainingShapes, int level = 0)
 		{
 			// Check if we have solved puzzle
 			if (remainingShapes.Count == 0) return solution;
@@ -182,13 +166,13 @@ namespace CalendarSolver
 									{
 										Solutions.Add(completeSolution);
 
-										Console.WriteLine($"Found {Solutions.Count} valid solution(s) in {sw.Elapsed.ToString()}");
+										Console.WriteLine($"Found {Solutions.Count} valid solution(s) in {Stopwatch.Elapsed.ToString()}");
 
 										if (DisplaySolutionsDuringSolve)
 										{
-											sw.Stop();
+											Stopwatch.Stop();
 											completeSolution.Display();
-											sw.Start();
+											Stopwatch.Start();
 										}
 
 										// If we have fount enough solutions return

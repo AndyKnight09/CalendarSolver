@@ -1,5 +1,6 @@
 ﻿namespace CalendarSolver
 {
+	// ReSharper disable once InconsistentNaming
 	public class TShape : Shape
 	{
 		public TShape()
