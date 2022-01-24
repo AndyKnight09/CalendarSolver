@@ -13,7 +13,7 @@ namespace CalendarSolver
 		public int RequiredSolutions { get; set; }= 1000;
 		public bool AllowFlips { get; set; } = false;
 		public bool DisplaySolutionsDuringSolve { get; set; } = true;
-		public bool DisplayFailedSolutions { get; set; } = false;
+		public int DisplayFailedSolutionLevel { get; set; } = 4;
 		public int FailedSolutionsDisplayTimeMs { get; set; } = 10;
 
 		private double PercentageCompletion { get; set; }
@@ -21,12 +21,14 @@ namespace CalendarSolver
 		private PuzzleSolution Puzzle { get; set; }
 		private List<List<Shape>> Shapes { get; set; }
 		private List<PuzzleSolution> Solutions { get; } = new List<PuzzleSolution>();
+
+		private Stopwatch sw { get; set; }
 		
 		public void Solve(DateTime date)
 		{
 			Console.WriteLine("Solving puzzle...");
 
-			var sw = Stopwatch.StartNew();
+			sw = Stopwatch.StartNew();
 			
 			Puzzle = InitialisePuzzle(date);
 			Shapes = GetAllShapePermutations();
@@ -163,27 +165,30 @@ namespace CalendarSolver
 						var shapeInPosition = shape.Offset(new Position(row, col));
 						if (solution.Fits(shapeInPosition))
 						{
-							// Create new solution including this shape
-							var newSolution = solution.Add(shapeInPosition);
+							// Create incremental solution including this shape
+							var incrementalSolution = solution.Add(shapeInPosition);
 							var newRemainingShapes = remainingShapes.Skip(1).ToList();
 
 							// Check if solution is still solvable
-							if (newSolution.IsSolvable(newRemainingShapes))
+							if (incrementalSolution.IsSolvable(newRemainingShapes))
 							{
 								// Solve for the next shape
-								newSolution = Solve(newSolution, newRemainingShapes, level + 1);
+								var completeSolution = Solve(incrementalSolution, newRemainingShapes, level + 1);
 
 								// Check if we have found a valid solution
-								if (newSolution != null)
+								if (completeSolution != null)
 								{
 									if (level == 0)
 									{
-										Console.WriteLine("Found valid solution");
-										Solutions.Add(newSolution);
+										Solutions.Add(completeSolution);
+
+										Console.WriteLine($"Found {Solutions.Count} valid solution(s) in {sw.Elapsed.ToString()}");
 
 										if (DisplaySolutionsDuringSolve)
 										{
-											newSolution.Display();
+											sw.Stop();
+											completeSolution.Display();
+											sw.Start();
 										}
 
 										// If we have fount enough solutions return
@@ -194,13 +199,17 @@ namespace CalendarSolver
 									}
 									else
 									{
-										return newSolution;
+										return completeSolution;
 									}
 								}
+								else if (DisplayFailedSolutionLevel == level)
+								{
+									incrementalSolution.Display(FailedSolutionsDisplayTimeMs);
+								}
 							}
-							else if (DisplayFailedSolutions)
+							else if (DisplayFailedSolutionLevel == level)
 							{
-								newSolution.Display(FailedSolutionsDisplayTimeMs);
+								incrementalSolution.Display(FailedSolutionsDisplayTimeMs);
 							}
 						}
 

@@ -9,7 +9,7 @@ namespace CalendarSolver
 			var solver = new PuzzleSolver()
 			{
 				AllowFlips = false,
-				DisplayFailedSolutions = false,
+				DisplayFailedSolutionLevel = 1, // Set to -1 to turn off
 				DisplaySolutionsDuringSolve = true,
 				FailedSolutionsDisplayTimeMs = 10,
 				RequiredSolutions = 1000
