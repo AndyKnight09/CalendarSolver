@@ -13,10 +13,12 @@ namespace CalendarSolver
 		public int RequiredSolutions { get; set; }= 1000;
 		public bool AllowFlips { get; set; } = false;
 		public bool DisplaySolutionsDuringSolve { get; set; } = true;
-		public int DisplayFailedSolutionLevel { get; set; } = 4;
+		public int DisplayPartialSolutionLevel { get; set; } = 4;
 		public int FailedSolutionsDisplayTimeMs { get; set; } = 10;
-
+		public int PercentageIncrementLevel { get; set; } = 1;
+		
 		private double PercentageCompletion { get; set; }
+		private double PercentageIncrement { get; set; }
 
 		private PuzzleSolution Puzzle { get; set; }
 		private List<List<Shape>> Shapes { get; set; }
@@ -34,6 +36,11 @@ namespace CalendarSolver
 			Shapes = GetAllShapePermutations();
 
 			PercentageCompletion = 0;
+			PercentageIncrement = 100.0;
+			for (var i = 0; i <= PercentageIncrementLevel; i++)
+			{
+				PercentageIncrement /= Shapes[0].Count * BoardSize.Width * BoardSize.Height;
+			}
 
 			Solve(Puzzle, Shapes);
 
@@ -129,15 +136,30 @@ namespace CalendarSolver
 			};
 		}
 
-		private PuzzleSolution Solve(PuzzleSolution solution, IReadOnlyList<List<Shape>> remainingShapes, int level = 0)
+		private bool Solve(PuzzleSolution solution, IReadOnlyList<List<Shape>> remainingShapes, int level = 0)
 		{
+			// Check if we already have enough solutions
+			if (Solutions.Count >= RequiredSolutions) return true;
+
 			// Check if we have solved puzzle
-			if (remainingShapes.Count == 0) return solution;
+			if (remainingShapes.Count == 0)
+			{
+				Solutions.Add(solution);
 
-			var percentageIncrement = 100.0 / (Shapes[0].Count * BoardSize.Width * BoardSize.Height * Shapes[1].Count * BoardSize.Width * BoardSize.Height);
+				Console.WriteLine($"Found {Solutions.Count} valid solution(s) in {Stopwatch.Elapsed.ToString()}");
 
+				if (DisplaySolutionsDuringSolve)
+				{
+					Stopwatch.Stop();
+					solution.Display();
+					Stopwatch.Start();
+				}
+
+				return true;
+			}
+			
 			// Try each permutation of next shape
-			var permutation = 0;
+			var permutation = 1;
 			var permutationCount = remainingShapes[0].Count;
 			foreach (var shape in remainingShapes[0])
 			{
@@ -157,54 +179,27 @@ namespace CalendarSolver
 							if (incrementalSolution.IsSolvable(newRemainingShapes))
 							{
 								// Solve for the next shape
-								var completeSolution = Solve(incrementalSolution, newRemainingShapes, level + 1);
-
-								// Check if we have found a valid solution
-								if (completeSolution != null)
+								if (Solve(incrementalSolution, newRemainingShapes, level + 1))
 								{
-									if (level == 0)
-									{
-										Solutions.Add(completeSolution);
-
-										Console.WriteLine($"Found {Solutions.Count} valid solution(s) in {Stopwatch.Elapsed.ToString()}");
-
-										if (DisplaySolutionsDuringSolve)
-										{
-											Stopwatch.Stop();
-											completeSolution.Display();
-											Stopwatch.Start();
-										}
-
-										// If we have fount enough solutions return
-										if (Solutions.Count == RequiredSolutions)
-										{
-											return null;
-										}
-									}
-									else
-									{
-										return completeSolution;
-									}
-								}
-								else if (DisplayFailedSolutionLevel == level)
-								{
-									incrementalSolution.Display(FailedSolutionsDisplayTimeMs);
+									// Check if we already have enough solutions
+									if (Solutions.Count >= RequiredSolutions) return true;
 								}
 							}
-							else if (DisplayFailedSolutionLevel == level)
+							
+							if (level == DisplayPartialSolutionLevel)
 							{
 								incrementalSolution.Display(FailedSolutionsDisplayTimeMs);
 							}
 						}
 
 						// How far through search space are we?
-						if (level == 1)
+						if (level == PercentageIncrementLevel)
 						{
-							PercentageCompletion += percentageIncrement;
+							PercentageCompletion += PercentageIncrement;
 						}
 
 						// Output some diagnostics
-						if (level <= 1)
+						if (level <= PercentageIncrementLevel)
 						{
 							Console.WriteLine($"{PercentageCompletion:0.0}% Tested shape {level} in permutation {permutation} of {permutationCount} at position ({row},{col})");
 						}
@@ -214,8 +209,7 @@ namespace CalendarSolver
 				permutation++;
 			}
 
-			// No solution found
-			return null;
+			return false;
 		}
 	}
 }

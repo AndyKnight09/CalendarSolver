@@ -9,10 +9,11 @@ namespace CalendarSolver
 			var solver = new PuzzleSolver
 			{
 				AllowFlips = false,
-				DisplayFailedSolutionLevel = 1, // Set to -1 to turn off
+				DisplayPartialSolutionLevel = 1, // Set to -1 to turn off display of partial solutions
 				DisplaySolutionsDuringSolve = true,
-				FailedSolutionsDisplayTimeMs = 10,
-				RequiredSolutions = 1000
+				FailedSolutionsDisplayTimeMs = 5,
+				RequiredSolutions = 1000,
+				PercentageIncrementLevel = 0
 			};
 
 			solver.Solve(DateTime.Now);

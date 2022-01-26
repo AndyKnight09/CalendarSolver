@@ -9,12 +9,35 @@ namespace CalendarSolver
 	public class PuzzleSolution
 	{
 		private Size BoardSize { get; }
-		private List<Shape> Shapes { get; }
+		//private List<Shape> Shapes { get; }
+		private int[,] Solution { get; }
+		private int ShapeCount { get; set; }
 
 		public PuzzleSolution(Size boardSize, List<Shape> shapes)
 		{
-			Shapes = shapes;
+			//Shapes = shapes;
 			BoardSize = boardSize;
+			Solution = new int[boardSize.Height, boardSize.Width];
+			for (var row = 0; row < boardSize.Height; row++)
+			{
+				for (var col = 0; col < boardSize.Width; col++)
+				{
+					Solution[row, col] = -1;
+				}
+			}
+
+			foreach (var shape in shapes)
+			{
+				shape.Vertices.ForEach(v => Solution[v.Row, v.Col] = ShapeCount);
+				ShapeCount++;
+			}
+		}
+
+		public PuzzleSolution(Size boardSize, int[,] solution, int shapeCount)
+		{
+			BoardSize = boardSize;
+			Solution = solution;
+			ShapeCount = shapeCount;
 		}
 
 		public bool Fits(Shape shape)
@@ -24,14 +47,14 @@ namespace CalendarSolver
 				return false;
 
 			// Make sure shape doesn't overlap
-			return !shape.Vertices.Any(v1 => Shapes.Any(s2 => s2.Vertices.Any(v2 => v2 == v1)));
+			return shape.Vertices.All(v => Solution[v.Row, v.Col] == -1);
 		}
 
 		public PuzzleSolution Add(Shape shape)
 		{
-			var solution = new PuzzleSolution(BoardSize, new List<Shape>());
-			solution.Shapes.AddRange(Shapes);
-			solution.Shapes.Add(shape);
+			var solution = new PuzzleSolution(BoardSize, (int[,])Solution.Clone(), ShapeCount);
+			shape.Vertices.ForEach(v => solution.Solution[v.Row, v.Col] = ShapeCount);
+			solution.ShapeCount++;
 			return solution;
 		}
 
@@ -49,9 +72,18 @@ namespace CalendarSolver
 				{
 					if (GetShapeIndex(row, col) != -1) continue;
 					
-					// ReSharper disable AccessToModifiedClosure
-					var adjacentHoles = holes.Where(hole => hole.Any(v => Math.Abs(v.Row - row) + Math.Abs(v.Col - col) == 1)).ToList();
-					// ReSharper restore AccessToModifiedClosure
+					var adjacentHoles = new List<List<Position>>();
+					foreach (var hole in holes)
+					{
+						foreach (var vertex in hole)
+						{
+							if (Math.Abs(vertex.Row - row) + Math.Abs(vertex.Col - col) != 1) continue;
+							
+							adjacentHoles.Add(hole);
+							break;
+						}
+						
+					}
 
 					if (adjacentHoles.Count > 0)
 					{
@@ -97,16 +129,8 @@ namespace CalendarSolver
 		private int GetShapeIndex(int row, int col)
 		{
 			if (row < 0 || row >= BoardSize.Height || col < 0 || col >= BoardSize.Width) return 0;
-
-			for (var i = 0; i < Shapes.Count; i++)
-			{
-				if (Shapes[i].Vertices.Any(v => v.Row == row && v.Col == col))
-				{
-					return i;
-				}
-			}
-
-			return -1;
+			
+			return Solution[row, col];
 		}
 		
 		private Vec3b GetColour(int row, int col)

@@ -5,7 +5,7 @@ namespace CalendarSolver
 {
 	public class Shape
 	{
-		public List<Position> Vertices { get; set; } = new();
+		public List<Position> Vertices { get; set; } = new(4);
 
 		public Shape Rotate90()
 		{
@@ -41,10 +41,12 @@ namespace CalendarSolver
 
 		public Shape Offset(Position position)
 		{
-			return new Shape
+			var shape = new Shape();
+			foreach (var vertex in Vertices)
 			{
-				Vertices = Vertices.Select(v => v + position).ToList()
-			};
+				shape.Vertices.Add(vertex + position);
+			}
+			return shape;
 		}
 	}
 }
