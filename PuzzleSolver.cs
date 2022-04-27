@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Drawing;
+using System.Threading.Tasks;
 
 namespace CalendarSolver
 {
@@ -10,6 +11,7 @@ namespace CalendarSolver
 	{
 		private static readonly Size BoardSize = new(7, 8);
 
+		public bool SolveInParallel { get; set; } = false;
 		public int RequiredSolutions { get; set; }= 1000;
 		public bool AllowFlips { get; set; } = false;
 		public bool DisplaySolutionsDuringSolve { get; set; } = true;
@@ -26,7 +28,7 @@ namespace CalendarSolver
 
 		private Stopwatch Stopwatch { get; set; }
 		
-		public void Solve(DateTime date)
+		public bool Solve(DateTime date)
 		{
 			Console.WriteLine("Solving puzzle...");
 
@@ -42,19 +44,33 @@ namespace CalendarSolver
 				PercentageIncrement /= Shapes[0].Count * BoardSize.Width * BoardSize.Height;
 			}
 
-			Solve(Puzzle, Shapes);
+			if (SolveInParallel)
+			{
+				// Disable intermediate solution display for parallel runs
+				DisplayPartialSolutionLevel = -1;
+				DisplaySolutionsDuringSolve = false;
+
+				ParallelSolve(Puzzle, Shapes);
+			}
+			else
+			{
+				Solve(Puzzle, Shapes);
+			}
 
 			Console.WriteLine();
 			Console.WriteLine($"Took {Stopwatch.Elapsed.ToString()} to find {Solutions.Count} solutions");
 			Console.WriteLine();
 
-			if (DisplaySolutionsDuringSolve) return;
-			
-			foreach (var solution in Solutions)
-			{
-				solution.Display();
+			if (!DisplaySolutionsDuringSolve)
+            {
+				foreach (var solution in Solutions)
+                {
+                    solution.Display();
+                }
 			}
-		}
+
+            return Solutions.Count > 0;
+        }
 
 		private static PuzzleSolution InitialisePuzzle(DateTime date)
 		{
@@ -205,6 +221,83 @@ namespace CalendarSolver
 						}
 					}
 				}
+
+				permutation++;
+			}
+
+			return false;
+		}
+
+		private bool ParallelSolve(PuzzleSolution solution, IReadOnlyList<List<Shape>> remainingShapes, int level = 0)
+		{
+			// Check if we already have enough solutions
+			if (Solutions.Count >= RequiredSolutions) return true;
+
+			// Check if we have solved puzzle
+			if (remainingShapes.Count == 0)
+			{
+				Solutions.Add(solution);
+
+				Console.WriteLine($"Found {Solutions.Count} valid solution(s) in {Stopwatch.Elapsed.ToString()}");
+
+				if (DisplaySolutionsDuringSolve)
+				{
+					Stopwatch.Stop();
+					solution.Display();
+					Stopwatch.Start();
+				}
+
+				return true;
+			}
+
+			// Try each permutation of next shape
+			var permutation = 1;
+			var permutationCount = remainingShapes[0].Count;
+			foreach (var shape in remainingShapes[0])
+			{
+				// Try all positions
+				Parallel.For(0, BoardSize.Height, new Action<int>((row) =>
+				{
+					for (var col = 0; col < BoardSize.Width; col++)
+					{
+						var shapeInPosition = shape.Offset(new Position(row, col));
+						if (solution.Fits(shapeInPosition))
+						{
+							// Create incremental solution including this shape
+							var incrementalSolution = solution.Add(shapeInPosition);
+							var newRemainingShapes = remainingShapes.Skip(1).ToList();
+
+							// Check if solution is still solvable
+							if (incrementalSolution.IsSolvable(newRemainingShapes))
+							{
+								// Solve for the next shape
+								if (Solve(incrementalSolution, newRemainingShapes, level + 1))
+								{
+									// Check if we already have enough solutions
+									if (Solutions.Count >= RequiredSolutions) return;
+								}
+							}
+
+							if (level == DisplayPartialSolutionLevel)
+							{
+								incrementalSolution.Display(FailedSolutionsDisplayTimeMs);
+							}
+						}
+
+						// How far through search space are we?
+						if (level == PercentageIncrementLevel)
+						{
+							PercentageCompletion += PercentageIncrement;
+						}
+
+						// Output some diagnostics
+						if (level <= PercentageIncrementLevel)
+						{
+							Console.WriteLine(
+								$"{PercentageCompletion:0.0}% Tested shape {level} in permutation {permutation} of {permutationCount} at position ({row},{col})");
+						}
+					}
+				}));
 
 				permutation++;
 			}
